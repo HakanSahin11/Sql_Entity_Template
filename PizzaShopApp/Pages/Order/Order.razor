@@ -1,0 +1,125 @@
+﻿@page "/Order"
+@using PizzaShopApp.Models
+@using System.Text.Json
+@using System.Text.Json.Serialization
+@inject HttpClient Http
+
+<h1>Order</h1>
+<div class="row">
+    <div class="col-md-6">
+        <a href='/Order/add' class="btn btn-primary" role="button">
+            <i class="fas fa-user-plus"></i>
+            Add Order
+        </a>
+    </div>
+    <div class="input-group col">
+        <input type="text" class="form-control" placeholder="Search user by id"
+               @bind="SearchString" @bind:event="oninput" @onkeyup="FilterUser" />
+        @if (SearchString.Length > 0)
+        {
+            <div class="input-group-append">
+                <button class="btn btn-danger" @onclick="ResetSearch">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+        }
+    </div>
+</div>
+<br />
+@if (FakturaList == null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <table class="table table-striped align-middle table-bordered">
+        <thead class="table-success">
+            <tr>
+                <th>Id</th>
+                <th>Username</th>
+                <th>Time of Order</th>
+                <th>Total Price</th>
+                <th>Pizza Name</th>
+                <th>Ingredients</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var order in FakturaList)
+            {
+                var current = 0;
+                <tr>
+                    <td>@order.Id</td>
+                    <td>@order.Username</td>
+                    <td>@order.Time_of_Order</td>
+                    <td>@order.Total_Price</td>
+                    <td> 
+                        <select class="selectpicker">
+                            @for (var i = 0; i < order.Pizzas.Count; i++)
+                            {
+                                <option value="@i">@order.Pizzas[i].Pizza_Name</option>
+                            }
+                        </select>
+                        </td>
+                        <td>
+                            @order.Pizzas[current].Ingredient_1, @order.Pizzas[current].Ingredient_2, @order.Pizzas[current].Ingredient_3, @order.Pizzas[current].Ingredient_4</td>
+                        <td>
+                        <a href='/order/edit/@order.Id' class="btn btn-outline-dark" role="button">
+                            Edit
+                        </a>
+                        <button class="btn btn-outline-danger"  @onclick="() => DeleteConfirm(order.Id)">
+                            Delete
+                        </button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+
+    </table>
+}
+@code {
+    private List<FakturaModel> FakturaList = new List<FakturaModel>();
+    private List<FakturaModel> FakturaSearchList = new List<FakturaModel>();
+   // private FakturaModel order = new FakturaModel();
+    private string SearchString { get; set; } = string.Empty;
+    protected override async Task OnInitializedAsync()
+    {
+        Http.BaseAddress = new Uri("https://localhost:7012/");
+        await GetFakturas();
+    }
+    private async Task GetFakturas()
+    {
+         JsonSerializerOptions options = new JsonSerializerOptions()
+            {
+                ReferenceHandler = ReferenceHandler.Preserve,
+                WriteIndented = true
+            };
+
+        
+        FakturaList = await Http.GetFromJsonAsync<List<FakturaModel>>("api/Order", options);
+
+
+        FakturaSearchList = FakturaList;
+    }
+    private void FilterUser()
+    {
+        if (!string.IsNullOrEmpty(SearchString))
+        {
+            FakturaList = FakturaSearchList
+                .Where(x => x.Username.IndexOf(SearchString, StringComparison.OrdinalIgnoreCase) != -1)
+                .ToList();
+        }
+        else
+        {
+            FakturaList = FakturaSearchList;
+        }
+    }
+    private void DeleteConfirm(int Id)
+    {
+        Http.DeleteAsync($"api/Order?id={Id}");
+    }
+    public void ResetSearch()
+    {
+        SearchString = string.Empty;
+        FakturaList = FakturaSearchList;
+    }
+}

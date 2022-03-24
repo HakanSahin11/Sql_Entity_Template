@@ -1,0 +1,101 @@
+﻿@page "/Customer"
+@using PizzaShopApp.Models
+@inject HttpClient Http
+
+<h1>Customr</h1>
+<div class="row">
+    <div class="col-md-6">
+        <a href='/customer/add' class="btn btn-primary" role="button">
+            <i class="fas fa-user-plus"></i>
+            Add Customer
+        </a>
+    </div>
+    <div class="input-group col">
+        <input type="text" class="form-control" placeholder="Search user by name"
+               @bind="SearchString" @bind:event="oninput" @onkeyup="FilterUser" />
+        @if (SearchString.Length > 0)
+        {
+            <div class="input-group-append">
+                <button class="btn btn-danger" @onclick="ResetSearch">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+        }
+    </div>
+</div>
+<br />
+@if (customerList == null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <table class="table table-striped align-middle table-bordered">
+        <thead class="table-success">
+            <tr>
+                <th>Id</th>
+                <th>Username</th>
+                <th>Firstname</th>
+                <th>Lastname</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var customer in customerList)
+            {
+                <tr>
+                    <td>@customer.Id</td>
+                    <td>@customer.Username</td>
+                    <td>@customer.Firstname</td>
+                    <td>@customer.Lastname</td>
+                    <td>
+                        <a href='/customer/edit/@customer.Id' class="btn btn-outline-dark" role="button">
+                            Edit
+                        </a>
+                        <button class="btn btn-outline-danger"  @onclick="() => DeleteConfirm(customer.Id)">
+                            Delete
+                        </button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+
+    </table>
+}
+@code {
+    private List<CustomersModel> customerList = new List<CustomersModel>();
+    private List<CustomersModel> searchUserData = new List<CustomersModel>();
+    private CustomersModel customer = new CustomersModel();
+    private string SearchString { get; set; } = string.Empty;
+    protected override async Task OnInitializedAsync()
+    {
+        Http.BaseAddress = new Uri("https://localhost:7012/");
+        await GetUser();
+    }
+    private async Task GetUser()
+    {
+        customerList = await Http.GetFromJsonAsync<List<CustomersModel>>("api/Customer");
+        searchUserData = customerList;
+    }
+    private void FilterUser()
+    {
+        if (!string.IsNullOrEmpty(SearchString))
+        {
+            customerList = searchUserData
+                .Where(x => x.Username.IndexOf(SearchString, StringComparison.OrdinalIgnoreCase) != -1)
+                .ToList();
+        }
+        else
+        {
+            customerList = searchUserData;
+        }
+    }
+    private void DeleteConfirm(int Id)
+    {
+        Http.DeleteAsync($"api/Customer?id={Id}");
+    }
+    public void ResetSearch()
+    {
+        SearchString = string.Empty;
+        customerList = searchUserData;
+    }
+}
