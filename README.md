@@ -1,0 +1,1 @@
+Dette er et skole projekt hvor der på kort tid skulle opsættes en simpel SQL Query via Blazor C#. Produktet har både mulighed for at blive kontaktet via hjemmeside interaktioner og HTTP-requests udefra som f.eks Postman.
